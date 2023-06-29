@@ -139,7 +139,7 @@ class BlackHole:
         """Open an equirectangular image.
         Can resize it with the size option.
         """
-        print("Openning %s" % img_name)
+        print(f"Openning {img_name}")
         self.img_original = Image.open(img_name, mode='r')
         self.img_name = img_name
 
@@ -273,7 +273,7 @@ class BlackHole:
                     dev_angle = phi[-1] + math.asin(self.D/r[-1]*math.sin(phi[-1]))
                     dev_angle = math.degrees(dev_angle)
                     deviated_angle = np.append(deviated_angle, dev_angle)
-                    Ci = 'C'+str(i)
+                    Ci = f'C{str(i)}'
 
                     if self.display_trajectories is True:
                         ax.plot(phi, r, Ci)  # plot one trajectory
@@ -297,21 +297,18 @@ class BlackHole:
 
     def search_alpha_min(self):
         """Return last angle at which the photon is kept by the black hole."""
-        alpha_min = 0
-
         for alpha in range(0, 180, 4):
             r = self.solver(alpha)[0]
             if r[-1] > 1.1*self.Rs:
                 break
 
-        if (alpha-4) > 0:
-            alpha_min = alpha - 4
+        alpha_min = alpha - 4 if alpha > 4 else 0
     #        print("alpha_min :",alpha_min,"(-4)")
         i = 1
 
         while alpha_min == 0 or round(alpha_min*self.img_res) != round((alpha_min+i*10)*self.img_res):  #increase precision
 
-            for alpha in range(int(alpha_min/i), int(180/i), 1):
+            for alpha in range(alpha_min // i, 180 // i, 1):
                 alpha = alpha*i
                 r = self.solver(alpha)[0]
 
@@ -322,10 +319,10 @@ class BlackHole:
                 alpha_min = alpha - i
     #            print("alpha_min : ",alpha_min," (-",i,")",sep="")
 
-            i = i/10
-        i = 10*i
+            i /= 10
+        i *= 10
         alpha_min += i
-        print("alpha_min: %s [%s, %s]" % (alpha_min, alpha_min-i, alpha_min))
+        print(f"alpha_min: {alpha_min} [{alpha_min - i}, {alpha_min}]")
 
         return alpha_min
 
@@ -373,9 +370,7 @@ class BlackHole:
 
     def interpolate(self, x_pivot, f_pivot):
         """Create interpolation data to reduce computation time."""
-        interpolation = interp1d(x_pivot, f_pivot,
-                                 kind=self.kind, bounds_error=False)
-        return interpolation
+        return interp1d(x_pivot, f_pivot, kind=self.kind, bounds_error=False)
 
     def matrices_names(self, folder=None):
         """Return the matrices names."""
@@ -383,12 +378,10 @@ class BlackHole:
             abs_path = os.path.abspath(os.path.dirname(sys.argv[0]))
             folder = os.path.join(abs_path, 'matrix')
 
-        matrix_name_x = "%s_%s_%s_%s_x.txt" % (
-            self.D, self.Rs, self.axe_X, self.FOV_img)
+        matrix_name_x = f"{self.D}_{self.Rs}_{self.axe_X}_{self.FOV_img}_x.txt"
         matrix_file_x = os.path.join(folder, matrix_name_x)
 
-        matrix_name_y = "%s_%s_%s_%s_y.txt" % (
-            self.D, self.Rs, self.axe_X, self.FOV_img)
+        matrix_name_y = f"{self.D}_{self.Rs}_{self.axe_X}_{self.FOV_img}_y.txt"
         matrix_file_y = os.path.join(folder, matrix_name_y)
 
         return matrix_file_x, matrix_file_y
@@ -404,8 +397,7 @@ class BlackHole:
         x_file = listdirectory(folder, matrix_file_x)
         y_file = listdirectory(folder, matrix_file_y)
 
-        matrices_exist = x_file is True and y_file is True
-        return matrices_exist
+        return x_file is True and y_file is True
 
     def create_matrices(self):
         """Call find_position function and create matrices with pixels
@@ -526,7 +518,7 @@ class BlackHole:
 
             img2 = self.img_pixels(self.img_debut)
 
-            if self.fixed_background != True and self.fixed_background != False:
+            if self.fixed_background not in [True, False]:
 
                 if self.fixed_background.get() is True:  # needed for GUI
                     img2 = img_offset_X(img2, -offset_X_tot)  # if want a fixed background and moving black hole
@@ -537,7 +529,7 @@ class BlackHole:
             if nbr_offset != 1 and a < nbr_offset: #if need to save real offset, put offset_x in global and offset_x+offset_x2+offset_x_tot in save name
                 image_name_save = "%s_D=%s_Rs=%s_size=%s_offset=%i%s" % (file_name, self.D, self.Rs, self.axe_X, offset_X_tot+self.offset_X+self.offset_X2, extension)
                 img2.save(image_name_save)
-                print("Save: "+image_name_save)
+                print(f"Save: {image_name_save}")
 
             if a < nbr_offset:
                 offset_X_temp = int(self.axe_X/nbr_offset) #at the end to have offset=0 for the first iteration
@@ -585,8 +577,7 @@ class BlackHole:
         pixels2[yv == -2] = [255, 192, 203]  # color pixels outside
         pixels2[xv == -2] = [255, 192, 203]
 
-        img2 = Image.fromarray(pixels2.astype('uint8'), 'RGB')
-        return img2
+        return Image.fromarray(pixels2.astype('uint8'), 'RGB')
 
     def img_save(self):
         """Save the image img2 with the parameters values."""
@@ -595,7 +586,7 @@ class BlackHole:
 
         if self.img2 is not None:
             self.img2.save(image_name_save)
-            print("Saved "+image_name_save)
+            print(f"Saved {image_name_save}")
         else:
             print("No image to save")
 
@@ -607,9 +598,7 @@ class BlackHole:
             if self.zoom >= self.axe_X/2/self.FOV_img*self.FOV_img_Y:
                 self.zoom = self.axe_X/2/self.FOV_img*self.FOV_img_Y
 
-            if self.zoom <= 0:
-                self.zoom = 0
-
+            self.zoom = max(self.zoom, 0)
             self.draw()
 
     def draw(self):
@@ -661,11 +650,7 @@ class BlackHoleGUI:
     """GUI controling a blackhole instance."""
     def __init__(self, blackhole=None):
         """GUI controling a blackhole instance."""
-        if blackhole is None:
-            self.blackhole = BlackHole()
-        else:
-            self.blackhole = blackhole
-
+        self.blackhole = BlackHole() if blackhole is None else blackhole
         self.create_interface()
 
     def create_interface(self):
@@ -823,8 +808,8 @@ class BlackHoleGUI:
 
         if self.blackhole.img2 is not None:
             self.blackhole.img2.save(image_name_save)
-            print("Saved "+image_name_save)
-            self.message4["text"] = "Saved "+image_name_save
+            print(f"Saved {image_name_save}")
+            self.message4["text"] = f"Saved {image_name_save}"
         else:
             self.message4["text"] = "No image to save"
 
@@ -847,8 +832,8 @@ class BlackHoleGUI:
                 self.message3["text"] = "Can't be 0 or negative"
             else:
                 self.blackhole.gif(int(self.number.get()))
-                image_name_save = "%s_D=%s_Rs=%s_size=%s_offset=%s%s" % (file_name, self.blackhole.D, self.blackhole.Rs, self.blackhole.axe_X, "*", extension)
-                self.message3["text"] = "Saved "+image_name_save
+                image_name_save = f"{file_name}_D={self.blackhole.D}_Rs={self.blackhole.Rs}_size={self.blackhole.axe_X}_offset=*{extension}"
+                self.message3["text"] = f"Saved {image_name_save}"
         except Exception:
             print("need integer")
             self.message3["text"] = "need integer"
@@ -861,12 +846,11 @@ class BlackHoleGUI:
             return None
         self.reset_msg()
 
-        img_name = askopenfilename(
+        if img_name := askopenfilename(
             # initialdir="",
             filetypes=[("Image File", ".png .jpg")],
-            title="Image file")
-
-        if img_name:
+            title="Image file",
+        ):
             size = int(self.size.get())
             self.blackhole.open(img_name, size=size)
             if self.blackhole.img_matrix_x is not None:
@@ -983,7 +967,7 @@ def return_folder_file_extension(img_name):
 
     file, extension = file.split(".")
 
-    return folder, file, "."+extension
+    return folder, file, f".{extension}"
 
 
 def example():

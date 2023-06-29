@@ -61,7 +61,7 @@ def return_folder_file_extension(image_name):
 
     file, extension = file.split(".")
 
-    return folder, file, "."+extension
+    return folder, file, f".{extension}"
 
 def fun(phi, u):
     """Represent the differential equation : d²u(ɸ)/dɸ²=3/2*Rs*u²(ɸ)-u(ɸ)"""
@@ -108,22 +108,18 @@ def solver(D, alpha):
 
 def search_alpha_min(D, img_res, Rs):
     """Return last angle at which the photon is kept by the black hole"""
-#        debut = time.process_time()
-    alpha_min = 0
-
     for alpha in range(0, 180, 4):
         r, phi = solver(D, alpha)
         if r[-1] > 1.1*Rs:
             break
 
-    if alpha-4 > 0:
-        alpha_min = alpha-4
+    alpha_min = alpha-4 if alpha > 4 else 0
 #        print("alpha_min :",alpha_min,"(-4)")
     i = 1
 
     while alpha_min == 0 or round(alpha_min*img_res) != round((alpha_min+i*10)*img_res):  #increase precision
 
-        for alpha in range(int(alpha_min/i), int(180/i), 1):
+        for alpha in range(alpha_min // i, 180 // i, 1):
             alpha = alpha*i
             r, phi = solver(D, alpha)
 
@@ -134,8 +130,8 @@ def search_alpha_min(D, img_res, Rs):
             alpha_min = alpha-i
 #            print("alpha_min : ",alpha_min," (-",i,")",sep="")
 
-        i = i/10
-    i = 10*i
+        i /= 10
+    i *= 10
     alpha_min += i
     print("alpha_min: ",alpha_min," [",alpha_min-i,";",alpha_min,"]",sep="")
 #        fin = time.process_time()
@@ -176,7 +172,7 @@ def trajectories(D, alpha_finder, img_res, Rs):
             if r[-1]>Rs*1.1: #if not capture by black hole
                 seen_angle.append(180-alpha) #put 180 in the center
                 deviated_angle.append(math.degrees((phi[-1]+math.asin(D/r[-1]*math.sin(phi[-1])))))
-                Ci = 'C'+str(i)
+                Ci = f'C{str(i)}'
 
                 if display_trajectories is True:
                     ax.plot(phi, r, Ci)   #plot one trajectory
@@ -311,7 +307,7 @@ def find_position(x, y):
     if theta == 90:  # Needed to avoid error with atan()
         beta = 0
 
-    elif phi == 180 or phi == 0:
+    elif phi in [180, 0]:
         beta = pi/2
 
     else:
@@ -464,10 +460,14 @@ def check_matrices():
     abs_path = os.path.abspath(os.path.dirname(sys.argv[0]))
     dir_path = os.path.join(abs_path, 'matrix')
 
-    matrix_name_x = str(D)+'_'+str(Rs)+'_'+str(final_size_img)+'_'+str(FOV_img)+'_x.txt'
+    matrix_name_x = (
+        f'{str(D)}_{str(Rs)}_{str(final_size_img)}_{str(FOV_img)}_x.txt'
+    )
     matrix_file_x = os.path.join(dir_path, matrix_name_x)
     x_file = listdirectory2(dir_path, matrix_file_x)
-    matrix_name_y = str(D)+'_'+str(Rs)+'_'+str(final_size_img)+'_'+str(FOV_img)+'_y.txt'
+    matrix_name_y = (
+        f'{str(D)}_{str(Rs)}_{str(final_size_img)}_{str(FOV_img)}_y.txt'
+    )
     matrix_file_y = os.path.join(dir_path, matrix_name_y)
     y_file = listdirectory2(dir_path, matrix_file_y)
 
@@ -507,7 +507,7 @@ def gif(nbr_offset):
         debut = time.process_time()
         img2 = img_pixels(img_debut, img2)
 
-        if fixed_background != True and fixed_background != False:
+        if fixed_background not in [True, False]:
 
             if fixed_background.get() is True:
                 img2 = img_offset_X(img2,-offset_X_tot)  # if want a fixed background and moving black hole
@@ -516,7 +516,9 @@ def gif(nbr_offset):
             img2 = img_offset_X(img2,-offset_X_tot)  # if want a fixed background and moving black hole
 
         if nbr_offset != 1 and a<nbr_offset: #if need to save real offset, put offset_x in global and offset_x+offset_x2+offset_x_tot in save name
-            img2.save(file_name+" D="+str(D)+" Rs="+str(Rs)+" size="+str(final_size_img)+" offset_X="+str(int(offset_X_tot+offset_X+offset_X2))+extension)
+            img2.save(
+                f"{file_name} D={str(D)} Rs={str(Rs)} size={str(final_size_img)} offset_X={int(offset_X_tot + offset_X + offset_X2)}{extension}"
+            )
 
         fin = time.process_time()
 
@@ -604,8 +606,7 @@ def onscroll(event): #function that listens to scroll event
         zoom += 10*event.step
         if zoom >= axe_X/2/FOV_img*FOV_img_Y:
             zoom = axe_X/2/FOV_img*FOV_img_Y
-        if zoom <= 0:
-            zoom = 0
+        zoom = max(zoom, 0)
         left_side = int(zoom*FOV_img/FOV_img_Y)
         right_side = int(axe_X-zoom*FOV_img/FOV_img_Y) #must be integer
         up_side = int(zoom)
@@ -723,10 +724,10 @@ def increase_resolution():
 def save_file():  # function that listens to click event
     global img2, offset_X, offset_X2, image_name
     folder, file_name, extension = return_folder_file_extension(image_name)
-    image_name_save = file_name+" D="+str(D)+" Rs="+str(Rs)+" size="+str(final_size_img)+" offset_X="+str(int(offset_X+offset_X2))+extension
+    image_name_save = f"{file_name} D={str(D)} Rs={str(Rs)} size={str(final_size_img)} offset_X={int(offset_X + offset_X2)}{extension}"
     img2.save(image_name_save)
-    print("Save: "+image_name_save)
-    message4["text"] = "Save: "+image_name_save
+    print(f"Save: {image_name_save}")
+    message4["text"] = f"Save: {image_name_save}"
 
 
 def save_gif():  # function that listens to click event
@@ -741,7 +742,9 @@ def save_gif():  # function that listens to click event
             message3["text"] = "Can't be 0 or negative"
         else:
             gif(int(number.get()))
-            message3["text"] = "Save: "+file_name+" D="+str(D)+" Rs="+str(Rs)+" size="+str(final_size_img)+" offset_X=*"+extension
+            message3[
+                "text"
+            ] = f"Save: {file_name} D={str(D)} Rs={str(Rs)} size={str(final_size_img)} offset_X=*{extension}"
     except:
         print("need integer")
         message3["text"] = "need integer"
@@ -752,12 +755,11 @@ def open_file_name():
     Not adapted for functions but classes"""
     global image_name, extension, img_original, img_debut, img, img2, ax, fig
 
-    nom_image_temp = askopenfilename(
-#        initialdir="",
-        filetypes =[("Image File", ".png .jpg")],
-        title = "Image file")
-
-    if nom_image_temp:
+    if nom_image_temp := askopenfilename(
+        # #        initialdir="",
+        filetypes=[("Image File", ".png .jpg")],
+        title="Image file",
+    ):
         image_name = nom_image_temp
         print("Openning:", image_name)
         [img_original, img_debut] = open_image(image_name)
