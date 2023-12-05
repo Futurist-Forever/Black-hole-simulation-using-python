@@ -4,7 +4,7 @@ Black hole simulation
 
 @author: Jonathan Peltier
 
-GitHub deposit:
+GitHub repository:
 https://github.com/Python-simulation/Black-hole-simulation-using-python/
 
 BlackHole class solving photons trajectories closed to a static black hole.
@@ -22,6 +22,9 @@ from tkinter import Button, Label, Checkbutton, BooleanVar, StringVar, Spinbox
 from tkinter.filedialog import askopenfilename
 
 import matplotlib.pyplot as plt  # Graphical module
+import matplotlib
+if matplotlib.get_backend() not in ("TKAgg", "Qt5Agg"):
+    matplotlib.use("TKAgg", force=True)
 #from matplotlib.widgets import Slider  # TODO: use it for offset GUI
 import numpy as np  # Use for matrices and list
 from scipy.interpolate import interp1d  # Use for interpolation
@@ -41,6 +44,7 @@ class BlackHole:
     def __init__(self):
         """Main class"""
         self.init_var()
+        plt.ion()
 
         try:
             abs_path = os.path.abspath(os.path.dirname(sys.argv[0]))
@@ -164,7 +168,7 @@ class BlackHole:
         if axe_Y % 2 != 0:
             axe_Y -= 1
 
-        self.img_debut = self.img_debut.resize((axe_X, axe_Y), Image.ANTIALIAS)
+        self.img_debut = self.img_debut.resize((axe_X, axe_Y), Image.Resampling.LANCZOS)
         self.FOV_img_Y = self.FOV_img * axe_Y / axe_X
 
         if self.FOV_img_Y > 180:
@@ -620,6 +624,8 @@ class BlackHole:
         self.ax.set_ylim((down_side, up_side))
 #        print((self.left_side, self.right_side), (self.down_side, self.up_side))
         self.fig.canvas.draw()
+        plt.draw()
+        plt.pause(0.001)
 
     def onclick(self, event):
         """Use to apply an offset when right clicking. Will be replace by a
@@ -1002,4 +1008,3 @@ if __name__ == "__main__":
 #    blackhole.open(img_name, size=360)
 #    blackhole.img_resize(360)
 #    blackhole.compute(Rs=8, D=50)
-
